@@ -51,23 +51,18 @@ class MyWindow(QtWidgets.QMainWindow):
         with open("file_path.cs", "rb") as file:
 	        self.dict_file = pickle.load(file)
 
-        with open("description.cs", "rb") as file:
-            self.dict_description = pickle.load(file)
-
         self.folder_path = self.dict_file["destination"]
         self.file_path = ""
-        if os.path.isdir(self.folder_path):
-            pass
-        else:
-            self.browse_sample_path
         self.library_path = self.dict_file["source"]
         self.library_file_path = ""
+        if os.path.isfile(os.path.join(self.folder_path, "description.cs")):
+            with open(os.path.join(self.folder_path, "description.cs"), "rb") as file:
+                self.dict_description = pickle.load(file)  
         
         self.ui.sample_path_label.setText(self.folder_path)
         self.ui.library_path_label.setText(self.library_path)
         self.ui.browse_sample_path_button.clicked.connect(self.browse_sample_path)
         self.ui.browse_library_path_button.clicked.connect(self.browse_library_path)
-        
 
         ### The Folder Sample TreeView
         self.dirModel = QtWidgets.QFileSystemModel()
@@ -126,6 +121,12 @@ class MyWindow(QtWidgets.QMainWindow):
         self.update_combo_button()
         self.ui.assign_button.clicked.connect(self.assign_combo_button)
         self.ui.copy_to_bank_no_button.clicked.connect(self.copy_to_bank)
+
+        if os.path.isdir(self.folder_path):
+            pass
+        else:
+            self.browse_sample_path()
+        self.init_path = self.folder_path      
 
     def browse_sample_path(self):
         ## Select the Foxdot sample directory
@@ -284,8 +285,8 @@ class MyWindow(QtWidgets.QMainWindow):
         sample = self.find_path_symbol()
         if sample is not None:
             self.dict_description[sample] = description
-            with open("description.cs", "wb") as file:
-	            pickle.dump(self.dict_description, file)    
+            with open(os.path.join(self.init_path, "description.cs"), "wb") as file:
+                pickle.dump(self.dict_description, file)    
 
     def find_path_symbol(self):
         path = list(Path(self.folder_path).parts)
