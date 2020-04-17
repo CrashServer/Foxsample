@@ -1,4 +1,4 @@
-# FoxSample
+# FoxSample v0.001
 A FoxDot sample manager
 
 A Python / Pyqt5 program to manage FoxDot sample directory.
