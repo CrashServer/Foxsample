@@ -1,84 +1,55 @@
-# Project Title
+# FoxSample
+A FoxDot sample manager
 
-One Paragraph of project description goes here
+A Python / Pyqt5 program to manage FoxDot sample directory.
+You can add from external sources, listen to samples, auto rename, add descriptions and more.
+
+Foxdot is a livecoding language. More info http://foxdot.org
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
-
 ### Prerequisites
-
-What things you need to install the software and how to install them
-
 ```
-Give examples
+- Python 3
+- Pyqt5 
 ```
 
 ### Installing
 
-A step by step series of examples that tell you how to get a development env running
+clone or copy to whatever directory 
 
-Say what the step will be
-
-```
-Give the example
-```
-
-And repeat
+and run with:
 
 ```
-until finished
+python3 foxsample.py
 ```
 
-End with an example of getting some data out of the system or using it for a little demo
+## How does it work ?
 
-## Running the tests
+![Alt text](screen.png?raw=true)
 
-Explain how to run the automated tests for this system
+1 - When you start the program for the first time, you must choose a foxdot snd directory. This is not necessarily the official directory, it can be any directory, but it must have same structure (a/upper/, _/+/, ...).
+Tips : work with a copy of the original directory
 
-### Break down into end to end tests
+2 - Navigate through the directory and choose one, and select a sample to listen to it.
 
-Explain what these tests test and why
+3 - When you select a sample it show you some informations. For now you can only listen to wav files (and something is wrong with 24bits files)
 
-```
-Give an example
-```
+4 - A few usefull functions :
+  * Move to bank no : rename all files and put the selected file at the active `select bank` position (no 6 in the screenshot).
+    eg: if you want to have the selected file in foxdot as sample=2, put 2 in `select bank`. 
+  * Rename all : rename all files in the selected directory and add index before according to actual order
+  * Unrename all : remove the index
+  * Delete : delete the selected sample file
+  * Rename : rename manually the selected sample file
 
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-## Deployment
-
-Add additional notes about how to deploy this on a live system
-
-## Built With
-
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
-
-## Contributing
-
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
-
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
+5 - the listen buttons
+  * you can easily listen to 10 sample directories using these buttons. The index of the sample played will be the one selected in `sample bank`. This in order to create coherent sample banks (all samples of 808 in sample = 8) 
+  * 
 
 ## Authors
 
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
-
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+* **Zbdm**
 
 ## Acknowledgments
 
