@@ -29,9 +29,10 @@ python3 foxsample.py
 ![Alt text](screen.png?raw=true)
 
 1 - When you start the program for the first time, you must choose a foxdot snd directory. This is not necessarily the official directory, it can be any directory, but it must have same structure (a/upper/, _/+/, ...).
+Next time you open the program, this location is saved.
 Tips : work with a copy of the original directory
 
-2 - Navigate through the directory and choose one, and select a sample to listen to it.
+2 - Navigate through the directory, choose one, and select a sample to listen to it.
 
 3 - When you select a sample it show you some informations. For now you can only listen to wav files (and something is wrong with 24bits files)
 
@@ -45,15 +46,19 @@ Tips : work with a copy of the original directory
 
 5 - the listen buttons
   * you can easily listen to 10 sample directories using these buttons. The index of the sample played will be the one selected in `sample bank`. This in order to create coherent sample banks (all samples of 808 in sample = 8) 
-  * 
+  * with `ReAssign button`, put a character in the text field, selected the char you wanna switch in the combobox and click `assign`  
+
+6 - `select bank` select the sample index for `listen buttons`, `move to bank` and `copy to bank functions`
+
+7 - show or hide the sample description table. When you select a directory, you can add or modify a description in the `Sample Description` field, when you press RETURN it save to a file `description.cs` in the root of your sample directory. You even have the number of samples per repertoire
+
+8 - you can choose a directory where you store your personnal samples
+
+9 - copy the selected personnal sample to the selected FoxDot directory. You can copy to an index or a simple copy 
+
+10 - You can adjust the volume of the listen samples in the program. Doesn't affect the files.
+     You can listen in endless loop the samples.
 
 ## Authors
 
 * **Zbdm**
-
-## Acknowledgments
-
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
-
