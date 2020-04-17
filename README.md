@@ -50,7 +50,7 @@ Tips : work with a copy of the original directory
 
 6 - `select bank` select the sample index for `listen buttons`, `move to bank` and `copy to bank functions`
 
-7 - show or hide the sample description table. When you select a directory, you can add or modify a description in the `Sample Description` field, when you press RETURN it save to a file `description.cs` in the root of your sample directory. You even have the number of samples per repertoire
+7 - show or hide the sample description table. When you select a directory, you can add or modify a description in the `Sample Description` field, when you press RETURN it save to a file `description.cs` in the root of your sample directory. You even have the number of samples per repertoire and you can edit the description in this window. 
 
 8 - you can choose a directory where you store your personnal samples
 
@@ -61,8 +61,7 @@ Tips : work with a copy of the original directory
 
 ## Future upgrade
  * function to convert files to wav 44000 16 bits
- * auto-update the dictionary when changes
- * possibility to edit the dictionary
+ 
 
 ## Authors
 
