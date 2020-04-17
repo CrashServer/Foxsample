@@ -27,6 +27,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
         self.dict_file = {}
         self.dict_description = {}
+        self.alpha = "abcdefghijklmnopqrstuvwxyz"
         self.nonalpha = {"&" : "ampersand",
             "*" : "asterix",
             "@" : "at",
@@ -58,7 +59,7 @@ class MyWindow(QtWidgets.QMainWindow):
         if os.path.isfile(os.path.join(self.folder_path, "description.cs")):
             with open(os.path.join(self.folder_path, "description.cs"), "rb") as file:
                 self.dict_description = pickle.load(file)  
-        
+
         self.ui.sample_path_label.setText(self.folder_path)
         self.ui.library_path_label.setText(self.library_path)
         self.ui.browse_sample_path_button.clicked.connect(self.browse_sample_path)
@@ -108,7 +109,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.unrename_button.clicked.connect(self.uname_all)
 
         self.ui.sample_description.returnPressed.connect(self.update_dict_description)
-
+        self.ui.checkBox_sample_window.toggled.connect(self.show_sample_window)
         self.ui.loop_checkbox.stateChanged.connect(self.play_audio)
 
         # Samples button
@@ -126,7 +127,11 @@ class MyWindow(QtWidgets.QMainWindow):
             pass
         else:
             self.browse_sample_path()
-        self.init_path = self.folder_path      
+        self.init_path = self.folder_path
+        ### create sample  windows
+        self.sample_window = Sample_Window(len(self.dict_description))
+        self.create_sample_window()
+        self.sample_window.tableWidget.cellChanged.connect(self.update_dict_from_table)      
 
     def browse_sample_path(self):
         ## Select the Foxdot sample directory
@@ -212,6 +217,60 @@ class MyWindow(QtWidgets.QMainWindow):
                 self.sound.setLoopCount(QSoundEffect.Infinite)               
             self.sound.play()
 
+    def create_sample_window(self):
+        self.count_dict = {}
+        keys_available = [x for x in self.dict_description.keys()]
+        x = 0
+        for char in self.alpha:
+            self.sample_window.tableWidget.setVerticalHeaderItem(x, QtWidgets.QTableWidgetItem(char.lower()))
+            # Nbr of sample lower
+            path = os.path.join(self.init_path, char.lower(), "lower")
+            nbr = self.count_nbr_sample(path)
+            self.sample_window.tableWidget.setItem(x, 1, QtWidgets.QTableWidgetItem(str(nbr)))
+            
+            if char.lower() in keys_available:
+                self.sample_window.tableWidget.setItem(x,0, QtWidgets.QTableWidgetItem(self.dict_description[char.lower()]))
+            else:
+                self.sample_window.tableWidget.setItem(x,0, QtWidgets.QTableWidgetItem("-"))
+            x += 1
+            
+            self.sample_window.tableWidget.setVerticalHeaderItem(x, QtWidgets.QTableWidgetItem(char.upper()))
+            # Nbr of sample upper
+            path = os.path.join(self.init_path, char.lower(), "upper")
+            nbr = self.count_nbr_sample(path)
+            self.sample_window.tableWidget.setItem(x, 1, QtWidgets.QTableWidgetItem(str(nbr)))
+            
+            if char.upper() in keys_available:
+                self.sample_window.tableWidget.setItem(x,0, QtWidgets.QTableWidgetItem(self.dict_description[char.upper()]))
+            else:
+                self.sample_window.tableWidget.setItem(x,0, QtWidgets.QTableWidgetItem("-"))
+            x += 1
+        
+        for char in self.nonalpha:
+            self.sample_window.tableWidget.setVerticalHeaderItem(x, QtWidgets.QTableWidgetItem(char))
+            # Nbr of sample nonalpha
+            path = os.path.join(self.init_path, "_", self.nonalpha[char])
+            nbr = self.count_nbr_sample(path)
+            self.sample_window.tableWidget.setItem(x, 1, QtWidgets.QTableWidgetItem(str(nbr)))
+            
+            if char in keys_available:
+                self.sample_window.tableWidget.setItem(x,0, QtWidgets.QTableWidgetItem(self.dict_description[char]))
+            else:
+                self.sample_window.tableWidget.setItem(x,0, QtWidgets.QTableWidgetItem("-"))
+            x += 1
+
+        self.sample_window.tableWidget.move(0,0)
+
+    def count_nbr_sample(self, path):
+        return len(os.listdir(path))
+
+
+    def show_sample_window(self):
+        if self.ui.checkBox_sample_window.isChecked():
+            self.sample_window.show()
+        else:
+            self.sample_window.hide()
+
     def get_sorted_files(self):
         ''' return a list of active destination files sorted '''
         sorted_files = sorted(os.listdir(self.folder_path))
@@ -267,11 +326,13 @@ class MyWindow(QtWidgets.QMainWindow):
         ''' copy the selected source file to active destination directory '''
         if os.path.isfile(self.library_file_path) and os.path.isdir(self.folder_path):
             shutil.copy(self.library_file_path, self.folder_path)
+        self.create_sample_window()    
 
     def delete_file(self):
         ''' delete the selected destiantion file '''
         if os.path.isfile(self.file_path):
             os.remove(self.file_path)
+        self.create_sample_window()
 
     def rename_file(self, index):
         new_name, ok = QtWidgets.QInputDialog.getText(self, 'Rename the file', 'Rename the file:', QtWidgets.QLineEdit.Normal, self.file_name)
@@ -287,6 +348,7 @@ class MyWindow(QtWidgets.QMainWindow):
             self.dict_description[sample] = description
             with open(os.path.join(self.init_path, "description.cs"), "wb") as file:
                 pickle.dump(self.dict_description, file)    
+        self.create_sample_window()
 
     def find_path_symbol(self):
         path = list(Path(self.folder_path).parts)
@@ -330,6 +392,7 @@ class MyWindow(QtWidgets.QMainWindow):
         file_to_copy = [x for x in after_listfile if x not in init_listfile]
         init_listfile.insert(self.ui.bank.value(), file_to_copy[0])
         self.rename_list_file(init_listfile)
+        self.create_sample_window()
 
     def move_to_bank(self):
         init_listfile = self.get_sorted_files()    
@@ -343,6 +406,7 @@ class MyWindow(QtWidgets.QMainWindow):
             init_listfile.remove(self.file_name)
             init_listfile.insert(self.ui.bank.value(), self.file_name)
             self.rename_list_file(init_listfile)   
+        self.create_sample_window()
 
     def listen_sample_bank(self):
         ''' listen sample button '''
@@ -361,6 +425,45 @@ class MyWindow(QtWidgets.QMainWindow):
         list_sample_listen = os.listdir(path_listen)
         list_sample_listen.sort(key=str.casefold)
         self.play_audio(os.path.join(path_listen, list_sample_listen[self.ui.bank.value()]))
+
+    #@pyqtSlot()
+    def update_dict_from_table(self):
+        for currentQTableWidgetItem in self.sample_window.tableWidget.selectedItems():
+            if currentQTableWidgetItem.column() == 0:
+                self.dict_description[self.sample_window.tableWidget.verticalHeaderItem(currentQTableWidgetItem.row()).text()] = currentQTableWidgetItem.text()
+                self.ui.sample_description.setText(currentQTableWidgetItem.text())
+        with open(os.path.join(self.init_path, "description.cs"), "wb") as file:
+                pickle.dump(self.dict_description, file)         
+
+class Sample_Window(QtWidgets.QWidget):
+ 
+    def __init__(self, row, parent=None):
+        super(Sample_Window, self).__init__(parent)
+        self.row = row + 1
+        self.title = 'Sample Dictionnary'
+        self.left = 0
+        self.top = 0
+        self.width = 300
+        self.height = 800
+        self.initUI()
+        
+    def initUI(self):
+        self.setWindowTitle(self.title)
+        self.setGeometry(self.left, self.top, self.width, self.height)
+        
+        self.createTable()
+
+        # Add box layout, add table to box layout and add box layout to widget
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.addWidget(self.tableWidget) 
+        self.setLayout(self.layout) 
+
+    def createTable(self):        
+        self.tableWidget = QtWidgets.QTableWidget(self)
+        self.tableWidget.setRowCount(self.row)
+        self.tableWidget.setColumnCount(2)
+        self.tableWidget.setHorizontalHeaderItem(0, QtWidgets.QTableWidgetItem("Description"))
+        self.tableWidget.setHorizontalHeaderItem(1, QtWidgets.QTableWidgetItem("Nbr of samples"))
 
 if __name__ == '__main__':
     import sys
