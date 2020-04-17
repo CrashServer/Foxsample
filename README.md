@@ -59,6 +59,11 @@ Tips : work with a copy of the original directory
 10 - You can adjust the volume of the listen samples in the program. Doesn't affect the files.
      You can listen in endless loop the samples.
 
+## Future upgrade
+ * function to convert files to wav 44000 16 bits
+ * auto-update the dictionary when changes
+ * possibility to edit the dictionary
+
 ## Authors
 
 * **Zbdm**
