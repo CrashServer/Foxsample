@@ -12,6 +12,7 @@ Foxdot is a livecoding language. More info http://foxdot.org
 ```
 - Python 3
 - Pyqt5 
+- ffmpeg (optionnal for wav convert)
 ```
 
 ### Installing
@@ -34,7 +35,7 @@ Tips : work with a copy of the original directory
 
 2 - Navigate through the directory, choose one, and select a sample to listen to it.
 
-3 - When you select a sample it show you some informations. For now you can only listen to wav files (and something is wrong with 24bits files)
+3 - When you select a sample it show you some informations. For now you can only listen to wav files
 
 4 - A few usefull functions :
   * Move to bank no : rename all files and put the selected file at the active `select bank` position (no 6 in the screenshot).
@@ -43,6 +44,7 @@ Tips : work with a copy of the original directory
   * Unrename all : remove the index
   * Delete : delete the selected sample file
   * Rename : rename manually the selected sample file
+  * convert to wav : convert the selected file to wav 16bits format (ffmpeg required)
 
 5 - the listen buttons
   * you can easily listen to 10 sample directories using these buttons. The index of the sample played will be the one selected in `sample bank`. This in order to create coherent sample banks (all samples of 808 in sample = 8) 
@@ -60,8 +62,7 @@ Tips : work with a copy of the original directory
      You can listen in endless loop the samples.
 
 ## Future upgrade
- * function to convert files to wav 44000 16 bits
- 
+
 
 ## Authors
 
