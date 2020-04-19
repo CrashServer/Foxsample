@@ -27,7 +27,7 @@ python3 foxsample.py
 
 ## How does it work ?
 
-![Alt text](screen.png?raw=true)
+![Alt text](foxsample_screen.png?raw=true)
 
 1 - When you start the program for the first time, you must choose a foxdot snd directory. This is not necessarily the official directory, it can be any directory, but it must have same structure (a/upper/, _/+/, ...).
 Next time you open the program, this location is saved.
