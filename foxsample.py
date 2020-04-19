@@ -57,6 +57,11 @@ class MyWindow(QtWidgets.QMainWindow):
         self.file_path = ""
         self.library_path = self.dict_file["source"]
         self.library_file_path = ""
+        if os.path.isdir(self.folder_path):
+            pass
+        else:
+            self.browse_sample_path()
+        self.init_path = self.folder_path    
         if os.path.isfile(os.path.join(self.folder_path, "description.cs")):
             with open(os.path.join(self.folder_path, "description.cs"), "rb") as file:
                 self.dict_description = pickle.load(file)  
@@ -125,11 +130,6 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.assign_button.clicked.connect(self.assign_combo_button)
         self.ui.copy_to_bank_no_button.clicked.connect(self.copy_to_bank)
 
-        if os.path.isdir(self.folder_path):
-            pass
-        else:
-            self.browse_sample_path()
-        self.init_path = self.folder_path
         ### create sample  windows
         self.sample_window = Sample_Window(len(self.dict_description))
         self.create_sample_window()
@@ -141,7 +141,6 @@ class MyWindow(QtWidgets.QMainWindow):
         self.store_sample_path()
         self.ui.sample_path_label.setText(self.folder_path)
         self.ui.sample_path_label.adjustSize()
-        self.load_folder_structure()
 
     def browse_library_path(self):
         ## Select the custom sample directory
