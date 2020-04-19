@@ -1,7 +1,7 @@
 #coding: utf8
 #!/usr/bin/env python3
 
-from PyQt5  import QtWidgets, QtCore
+from PyQt5  import QtWidgets, QtCore, QtGui
 from PyQt5.QtMultimedia import QSoundEffect
 
 from layout import Ui_MainWindow
@@ -228,7 +228,8 @@ class MyWindow(QtWidgets.QMainWindow):
             path = os.path.join(self.init_path, char.lower(), "lower")
             nbr = self.count_nbr_sample(path)
             self.sample_window.tableWidget.setItem(x, 1, QtWidgets.QTableWidgetItem(str(nbr)))
-            
+            self.sample_window.tableWidget.item(x, 1).setBackground(QtGui.QColor((10+int(nbr)*20),0,25))
+
             if char.lower() in keys_available:
                 self.sample_window.tableWidget.setItem(x,0, QtWidgets.QTableWidgetItem(self.dict_description[char.lower()]))
             else:
@@ -240,6 +241,7 @@ class MyWindow(QtWidgets.QMainWindow):
             path = os.path.join(self.init_path, char.lower(), "upper")
             nbr = self.count_nbr_sample(path)
             self.sample_window.tableWidget.setItem(x, 1, QtWidgets.QTableWidgetItem(str(nbr)))
+            self.sample_window.tableWidget.item(x, 1).setBackground(QtGui.QColor((10+int(nbr)*20),0,25))
             
             if char.upper() in keys_available:
                 self.sample_window.tableWidget.setItem(x,0, QtWidgets.QTableWidgetItem(self.dict_description[char.upper()]))
@@ -253,6 +255,7 @@ class MyWindow(QtWidgets.QMainWindow):
             path = os.path.join(self.init_path, "_", self.nonalpha[char])
             nbr = self.count_nbr_sample(path)
             self.sample_window.tableWidget.setItem(x, 1, QtWidgets.QTableWidgetItem(str(nbr)))
+            self.sample_window.tableWidget.item(x, 1).setBackground(QtGui.QColor((10+int(nbr)*20),0,25))
             
             if char in keys_available:
                 self.sample_window.tableWidget.setItem(x,0, QtWidgets.QTableWidgetItem(self.dict_description[char]))
