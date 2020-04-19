@@ -13,6 +13,7 @@ import sys
 import os
 import shutil
 import pickle
+from subprocess import call 
 from itertools import cycle
 from pathlib import Path
 
@@ -48,7 +49,7 @@ class MyWindow(QtWidgets.QMainWindow):
             "2" : "2",
             "3" : "3",
             "4" : "4" }
-            
+        
         with open("file_path.cs", "rb") as file:
 	        self.dict_file = pickle.load(file)
 
@@ -107,6 +108,7 @@ class MyWindow(QtWidgets.QMainWindow):
         
         self.ui.rename_button.clicked.connect(self.rename_file)
         self.ui.unrename_button.clicked.connect(self.uname_all)
+        self.ui.convert_button.clicked.connect(self.convert_to_wav)
 
         self.ui.sample_description.returnPressed.connect(self.update_dict_description)
         self.ui.checkBox_sample_window.toggled.connect(self.show_sample_window)
@@ -329,11 +331,27 @@ class MyWindow(QtWidgets.QMainWindow):
         self.create_sample_window()    
 
     def delete_file(self):
-        ''' delete the selected destiantion file '''
+        ''' delete the selected destination file '''
         if os.path.isfile(self.file_path):
             os.remove(self.file_path)
         self.create_sample_window()
 
+    def convert_to_wav(self):
+        if os.path.isfile(self.file_path):
+            file, sep, extension = self.file_path.partition(".")
+            if extension == "wav":
+                file += "_convert" 
+            try:
+                call(["ffmpeg", "-y", "-i", self.file_path, file+".wav"])
+                self.delete_file()
+            except:
+                msg = QtWidgets.QMessageBox()
+                msg.setIcon(QtWidgets.QMessageBox.Critical)
+                msg.setText("FFMPEG problem !")
+                msg.setInformativeText('Make sure you have ffmpeg installed')
+                msg.setWindowTitle("ffmpeg error")
+                msg.exec_()
+                
     def rename_file(self, index):
         new_name, ok = QtWidgets.QInputDialog.getText(self, 'Rename the file', 'Rename the file:', QtWidgets.QLineEdit.Normal, self.file_name)
         if ok:
@@ -426,7 +444,6 @@ class MyWindow(QtWidgets.QMainWindow):
         list_sample_listen.sort(key=str.casefold)
         self.play_audio(os.path.join(path_listen, list_sample_listen[self.ui.bank.value()]))
 
-    #@pyqtSlot()
     def update_dict_from_table(self):
         for currentQTableWidgetItem in self.sample_window.tableWidget.selectedItems():
             if currentQTableWidgetItem.column() == 0:
@@ -456,7 +473,7 @@ class Sample_Window(QtWidgets.QWidget):
         # Add box layout, add table to box layout and add box layout to widget
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.addWidget(self.tableWidget) 
-        self.setLayout(self.layout) 
+        self.setLayout(self.layout)
 
     def createTable(self):        
         self.tableWidget = QtWidgets.QTableWidget(self)
@@ -470,4 +487,7 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     window = MyWindow()
     window.show()
-    sys.exit(app.exec_())
+    ret = app.exec_()
+    
+    app.quit()   
+    sys.exit(ret)
