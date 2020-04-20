@@ -13,7 +13,9 @@ import sys
 import os
 import shutil
 import pickle
-from subprocess import call 
+import platform
+import argparse
+from subprocess import call, Popen 
 from itertools import cycle
 from pathlib import Path
 
@@ -25,9 +27,11 @@ class MyWindow(QtWidgets.QMainWindow):
 
         self.play_obj = None
         self.sound = None
-
         self.dict_file = {}
         self.dict_description = {}
+        self.file_path = ""
+        self.library_file_path = ""
+
         self.alpha = "abcdefghijklmnopqrstuvwxyz"
         self.nonalpha = {"&" : "ampersand",
             "*" : "asterix",
@@ -49,18 +53,39 @@ class MyWindow(QtWidgets.QMainWindow):
             "2" : "2",
             "3" : "3",
             "4" : "4" }
-        
+
+        ### load the saved directories
         with open("file_path.cs", "rb") as file:
 	        self.dict_file = pickle.load(file)
 
-        self.folder_path = self.dict_file["destination"]
-        self.file_path = ""
-        self.library_path = self.dict_file["source"]
-        self.library_file_path = ""
+        parser = argparse.ArgumentParser(
+            prog="FoxDot Sample Manager", 
+            description="A samples manager for FoxDot", 
+            epilog="More information: https://foxdot.org/")
+
+        parser.add_argument('-d', '--dir', action='store', help="use a foxdot directory at startup")
+        parser.add_argument('-s', '--source', action='store', help="use a source directory at startup")
+        args = parser.parse_args()
+
+        if args.dir:
+            self.folder_path = args.dir
+        else:    
+            self.folder_path = self.dict_file["destination"]
+        
+        if args.source:
+            self.library_path = args.source
+        else:
+            self.library_path = self.dict_file["source"]
+        
         if os.path.isdir(self.folder_path):
-            pass
+            ### Test if it's a foxdot snd dir
+            if os.path.isdir(os.path.join(self.folder_path,"a","lower")):
+                pass
+            else:
+                self.browse_sample_path()
         else:
             self.browse_sample_path()
+
         self.init_path = self.folder_path    
         if os.path.isfile(os.path.join(self.folder_path, "description.cs")):
             with open(os.path.join(self.folder_path, "description.cs"), "rb") as file:
@@ -130,6 +155,9 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.assign_button.clicked.connect(self.assign_combo_button)
         self.ui.copy_to_bank_no_button.clicked.connect(self.copy_to_bank)
 
+        self.ui.openfoxdot_button.clicked.connect(self.open_foxdot)
+        self.ui.open_dir_button.clicked.connect(self.open_dir_foxdot)
+
         ### create sample  windows
         self.sample_window = Sample_Window(len(self.dict_description))
         self.create_sample_window()
@@ -138,6 +166,7 @@ class MyWindow(QtWidgets.QMainWindow):
     def browse_sample_path(self):
         ## Select the Foxdot sample directory
         self.folder_path = QtWidgets.QFileDialog.getExistingDirectory(self, "Open FoxDot Sample Folder (./FoxDot/snd/ by default) ", self.folder_path, QtWidgets.QFileDialog.ShowDirsOnly)
+        self.init_path = self.folder_path
         self.store_sample_path()
         self.ui.sample_path_label.setText(self.folder_path)
         self.ui.sample_path_label.adjustSize()
@@ -152,7 +181,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def store_sample_path(self):
         # Store the selected sample path for next session
-        self.dict_file = {"destination": self.folder_path, "source": self.library_path}
+        self.dict_file = {"destination": self.init_path, "source": self.library_path}
         with open("file_path.cs", "wb") as file:
 	        pickle.dump(self.dict_file, file)    
 
@@ -237,6 +266,7 @@ class MyWindow(QtWidgets.QMainWindow):
             x += 1
             
             self.sample_window.tableWidget.setVerticalHeaderItem(x, QtWidgets.QTableWidgetItem(char.upper()))
+            
             # Nbr of sample upper
             path = os.path.join(self.init_path, char.lower(), "upper")
             nbr = self.count_nbr_sample(path)
@@ -344,16 +374,22 @@ class MyWindow(QtWidgets.QMainWindow):
             if extension == "wav":
                 file += "_convert" 
             try:
-                call(["ffmpeg", "-y", "-i", self.file_path, file+".wav"])
-                self.delete_file()
+                output = file+".wav"
+                call(["ffmpeg", "-y", "-i", self.file_path, "-ar", "44100", output])
+                if os.path.isfile(output):
+                    self.delete_file()
             except:
-                msg = QtWidgets.QMessageBox()
-                msg.setIcon(QtWidgets.QMessageBox.Critical)
-                msg.setText("FFMPEG problem !")
-                msg.setInformativeText('Make sure you have ffmpeg installed')
-                msg.setWindowTitle("ffmpeg error")
-                msg.exec_()
-                
+                self.msg_box("FFMPEG problem !", 'Make sure you have ffmpeg installed', "ffmpeg error")
+
+
+    def msg_box(self, text, info, title):
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Critical)
+        msg.setText(text)
+        msg.setInformativeText(info)
+        msg.setWindowTitle(title)
+        msg.exec_()
+
     def rename_file(self, index):
         new_name, ok = QtWidgets.QInputDialog.getText(self, 'Rename the file', 'Rename the file:', QtWidgets.QLineEdit.Normal, self.file_name)
         if ok:
@@ -452,8 +488,25 @@ class MyWindow(QtWidgets.QMainWindow):
                 self.dict_description[self.sample_window.tableWidget.verticalHeaderItem(currentQTableWidgetItem.row()).text()] = currentQTableWidgetItem.text()
                 self.ui.sample_description.setText(currentQTableWidgetItem.text())
         with open(os.path.join(self.init_path, "description.cs"), "wb") as file:
-                pickle.dump(self.dict_description, file)         
+                pickle.dump(self.dict_description, file)
 
+    def open_foxdot(self):
+        try:
+            call(["python3", "-m", "FoxDot", "-n", "-d", self.init_path])                     
+        except:
+            try:
+                call(["python3", "-m", "FoxDot", "-n", "-d", self.init_path])
+            except:
+                self.msg_box("Couldn't execute Foxdot", "Please install foxdot first", "Foxdot Error !")
+
+    def open_dir_foxdot(self):
+        if platform.system() == "Windows":
+            os.startfile(self.init_path)
+        elif platform.system() == "Darwin":
+            Popen(["open", self.init_path])
+        else:
+            Popen(["xdg-open", self.init_path])            
+                
 class Sample_Window(QtWidgets.QWidget):
  
     def __init__(self, row, parent=None):
