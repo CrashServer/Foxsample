@@ -154,6 +154,8 @@ class MyWindow(QtWidgets.QMainWindow):
         self.update_combo_button()
         self.ui.assign_button.clicked.connect(self.assign_combo_button)
         self.ui.copy_to_bank_no_button.clicked.connect(self.copy_to_bank)
+        self.ui.moveto_button.clicked.connect(self.move_to)
+        self.ui.exit_button.clicked.connect(self.closeEvent)
 
         self.ui.openfoxdot_button.clicked.connect(self.open_foxdot)
         self.ui.open_dir_button.clicked.connect(self.open_dir_foxdot)
@@ -162,6 +164,18 @@ class MyWindow(QtWidgets.QMainWindow):
         self.sample_window = Sample_Window(len(self.dict_description))
         self.create_sample_window()
         self.sample_window.tableWidget.cellChanged.connect(self.update_dict_from_table)      
+        self.show_sample_window()
+
+    def closeEvent(self, event):
+        reply = QtWidgets.QMessageBox.question(self, "Quit application", "Are you sure you wan't to quit ?", QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
+        if reply == QtWidgets.QMessageBox.Yes:
+            #self.store_sample_path()
+            self.sample_window.close()
+            self.close()
+            event.accept()
+        else:
+            event.ignore()
+
 
     def browse_sample_path(self):
         ## Select the Foxdot sample directory
@@ -184,6 +198,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.dict_file = {"destination": self.init_path, "source": self.library_path}
         with open("file_path.cs", "wb") as file:
 	        pickle.dump(self.dict_file, file)    
+    
 
     def load_folder_structure(self):
         ## Folder Foxdot structure TreeView
@@ -237,6 +252,7 @@ class MyWindow(QtWidgets.QMainWindow):
             if self.sound.isPlaying():
                 self.sound.setLoopCount(0)
                 self.sound.stop()
+                self.sound = None
         except:
             pass        
         if os.path.isfile(filepath):
@@ -246,7 +262,7 @@ class MyWindow(QtWidgets.QMainWindow):
             if self.ui.loop_checkbox.isChecked():
                 self.sound.setLoopCount(QSoundEffect.Infinite)               
             self.sound.play()
-
+        
     def create_sample_window(self):
         self.count_dict = {}
         keys_available = [x for x in self.dict_description.keys()]
@@ -368,6 +384,13 @@ class MyWindow(QtWidgets.QMainWindow):
             os.remove(self.file_path)
         self.create_sample_window()
 
+    def move_to(self):
+        verif = self.count_nbr_sample(self.folder_path)
+        self.copy_file()
+        if self.count_nbr_sample(self.folder_path) == verif + 1:
+            os.remove(self.library_file_path)
+        self.create_sample_window()
+
     def convert_to_wav(self):
         if os.path.isfile(self.file_path):
             file, sep, extension = self.file_path.partition(".")
@@ -486,7 +509,7 @@ class MyWindow(QtWidgets.QMainWindow):
         for currentQTableWidgetItem in self.sample_window.tableWidget.selectedItems():
             if currentQTableWidgetItem.column() == 0:
                 self.dict_description[self.sample_window.tableWidget.verticalHeaderItem(currentQTableWidgetItem.row()).text()] = currentQTableWidgetItem.text()
-                self.ui.sample_description.setText(currentQTableWidgetItem.text())
+                #self.ui.sample_description.setText(currentQTableWidgetItem.text())
         with open(os.path.join(self.init_path, "description.cs"), "wb") as file:
                 pickle.dump(self.dict_description, file)
 
