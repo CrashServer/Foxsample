@@ -2,7 +2,7 @@
 #!/usr/bin/env python3
 
 from PyQt5  import QtWidgets, QtCore, QtGui
-from PyQt5.QtMultimedia import QSoundEffect
+from PyQt5.QtMultimedia import QSoundEffect, QMediaPlayer
 
 from layout import Ui_MainWindow
 #from pydub import AudioSegment
@@ -90,7 +90,10 @@ class MyWindow(QtWidgets.QMainWindow):
         if os.path.isfile(os.path.join(self.folder_path, "description.cs")):
             with open(os.path.join(self.folder_path, "description.cs"), "rb") as file:
                 self.dict_description = pickle.load(file)  
+        else:
+            self.create_dict()
 
+        ### Browse Folders
         self.ui.sample_path_label.setText(self.folder_path)
         self.ui.library_path_label.setText(self.library_path)
         self.ui.browse_sample_path_button.clicked.connect(self.browse_sample_path)
@@ -110,9 +113,8 @@ class MyWindow(QtWidgets.QMainWindow):
         for i in range(1,4):
             self.ui.tree_library_dir.hideColumn(i)
             
-        
         ### The file sample View
-        self.file_filters = ["*.wav", "*.aif", "*.ogg"]
+        self.file_filters = ["*.wav", "*.aif", "*.ogg", "*.mp3"]
         self.fileModel = QtWidgets.QFileSystemModel()
         self.fileModel.setNameFilters(self.file_filters)
         self.fileModel.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Files)
@@ -130,19 +132,30 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.tree_library_dir.clicked.connect(self.on_clicked_folder_library)
         self.ui.listView_library.clicked.connect(self.on_clicked_file_library)
         
-        ### Buttons click
-        self.ui.copy_button.clicked.connect(self.copy_file)
-        self.ui.delete_button.clicked.connect(self.delete_file)
-        self.ui.rename_all_button.clicked.connect(self.rename_all)
-        self.ui.move_to_bank_button.clicked.connect(self.move_to_bank)
-        
-        self.ui.rename_button.clicked.connect(self.rename_file)
-        self.ui.unrename_button.clicked.connect(self.uname_all)
-        self.ui.convert_button.clicked.connect(self.convert_to_wav)
+        ### UP/DOWN move sample order
+        self.ui.Up_Button.clicked.connect(self.move_down)
+        self.ui.Down_Button.clicked.connect(self.move_up)
 
+        ### Buttons destination click
+        #self.ui.move_to_bank_button.clicked.connect(self.move_to_bank)
+        self.ui.delete_button.clicked.connect(self.delete_file)
+        self.ui.rename_button.clicked.connect(self.rename_file)
+        self.ui.convert_button.clicked.connect(self.convert_to_wav)
+        #self.ui.rename_all_button.clicked.connect(self.rename_all)
+        #self.ui.unrename_button.clicked.connect(self.uname_all)
+        
         self.ui.sample_description.returnPressed.connect(self.update_dict_description)
         self.ui.checkBox_sample_window.toggled.connect(self.show_sample_window)
+
+        ### Source buttons
         self.ui.loop_checkbox.stateChanged.connect(self.play_audio)
+        self.ui.copy_button.clicked.connect(self.copy_file)
+        self.ui.moveto_button.clicked.connect(self.move_to)
+        self.ui.openfoxdot_button.clicked.connect(self.open_foxdot)
+        self.ui.open_dir_button.clicked.connect(self.open_dir_foxdot)
+
+        self.ui.exit_button.clicked.connect(self.closeEvent)
+        #self.ui.copy_to_bank_no_button.clicked.connect(self.copy_to_bank)
 
         # Samples button
         self.list_button_sample = [self.ui.sampleButton1, self.ui.sampleButton2, self.ui.sampleButton3, self.ui.sampleButton4,
@@ -153,13 +166,7 @@ class MyWindow(QtWidgets.QMainWindow):
         #assign button
         self.update_combo_button()
         self.ui.assign_button.clicked.connect(self.assign_combo_button)
-        self.ui.copy_to_bank_no_button.clicked.connect(self.copy_to_bank)
-        self.ui.moveto_button.clicked.connect(self.move_to)
-        self.ui.exit_button.clicked.connect(self.closeEvent)
-
-        self.ui.openfoxdot_button.clicked.connect(self.open_foxdot)
-        self.ui.open_dir_button.clicked.connect(self.open_dir_foxdot)
-
+        
         ### create sample  windows
         self.sample_window = Sample_Window(len(self.dict_description))
         self.create_sample_window()
@@ -221,9 +228,12 @@ class MyWindow(QtWidgets.QMainWindow):
             self.ui.sample_description.clear()    
 
     def on_clicked_file(self, index):
+        self.rename_all()
         self.file_path = self.fileModel.fileInfo(index).absoluteFilePath()
         self.file_name = str(self.fileModel.fileInfo(index).fileName())
-        #self.sound = AudioSegment.from_file(self.file_path)
+        self.list_files = self.get_sorted_files()
+        self.index_file = self.list_files.index(self.file_name)
+        self.ui.position_label.display(str(self.index_file))
         self.sample_info(self.file_path)
         self.play_audio(self.file_path)
         
@@ -234,7 +244,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def on_clicked_file_library(self, index):
         self.library_file_path = self.libraryModel.fileInfo(index).absoluteFilePath()
-        #self.sound_library = AudioSegment.from_file(self.library_file_path)
+        self.library_file_name = str(self.fileModel.fileInfo(index).fileName())
         self.sample_info(self.library_file_path)
         self.play_audio(self.library_file_path)
             
@@ -256,13 +266,19 @@ class MyWindow(QtWidgets.QMainWindow):
         except:
             pass        
         if os.path.isfile(filepath):
-            self.sound = QSoundEffect(self)
-            self.sound.setSource(QtCore.QUrl.fromLocalFile(filepath))
-            self.sound.setVolume(self.ui.volume_slider.value()/100)
-            if self.ui.loop_checkbox.isChecked():
-                self.sound.setLoopCount(QSoundEffect.Infinite)               
-            self.sound.play()
-        
+            try:
+                self.sound = QSoundEffect(self)
+                self.sound.setSource(QtCore.QUrl.fromLocalFile(filepath))
+                self.sound.setVolume(self.ui.volume_slider.value()/100)
+                if self.ui.loop_checkbox.isChecked():
+                    self.sound.setLoopCount(QSoundEffect.Infinite)               
+                self.sound.play()
+            except:
+                self.sound = QMediaPlayer(self)
+                self.sound.setSource(QtCore.QUrl.fromLocalFile(filepath))
+                self.sound.setVolume(self.ui.volume_slider.value()/100)
+                self.sound.play()
+
     def create_sample_window(self):
         self.count_dict = {}
         keys_available = [x for x in self.dict_description.keys()]
@@ -273,7 +289,7 @@ class MyWindow(QtWidgets.QMainWindow):
             path = os.path.join(self.init_path, char.lower(), "lower")
             nbr = self.count_nbr_sample(path)
             self.sample_window.tableWidget.setItem(x, 1, QtWidgets.QTableWidgetItem(str(nbr)))
-            self.sample_window.tableWidget.item(x, 1).setBackground(QtGui.QColor((10+int(nbr)*20),0,25))
+            self.sample_window.tableWidget.item(x, 1).setBackground(QtGui.QColor(self.clamp((10+int(nbr)*20),0,255),0,25))
 
             if char.lower() in keys_available:
                 self.sample_window.tableWidget.setItem(x,0, QtWidgets.QTableWidgetItem(self.dict_description[char.lower()]))
@@ -287,7 +303,7 @@ class MyWindow(QtWidgets.QMainWindow):
             path = os.path.join(self.init_path, char.lower(), "upper")
             nbr = self.count_nbr_sample(path)
             self.sample_window.tableWidget.setItem(x, 1, QtWidgets.QTableWidgetItem(str(nbr)))
-            self.sample_window.tableWidget.item(x, 1).setBackground(QtGui.QColor((10+int(nbr)*20),0,25))
+            self.sample_window.tableWidget.item(x, 1).setBackground(QtGui.QColor(self.clamp((10+int(nbr)*20),0,255),0,25))
             
             if char.upper() in keys_available:
                 self.sample_window.tableWidget.setItem(x,0, QtWidgets.QTableWidgetItem(self.dict_description[char.upper()]))
@@ -301,7 +317,7 @@ class MyWindow(QtWidgets.QMainWindow):
             path = os.path.join(self.init_path, "_", self.nonalpha[char])
             nbr = self.count_nbr_sample(path)
             self.sample_window.tableWidget.setItem(x, 1, QtWidgets.QTableWidgetItem(str(nbr)))
-            self.sample_window.tableWidget.item(x, 1).setBackground(QtGui.QColor((10+int(nbr)*20),0,25))
+            self.sample_window.tableWidget.item(x, 1).setBackground(QtGui.QColor(self.clamp((10+int(nbr)*20),0,255),0,25))
             
             if char in keys_available:
                 self.sample_window.tableWidget.setItem(x,0, QtWidgets.QTableWidgetItem(self.dict_description[char]))
@@ -310,6 +326,11 @@ class MyWindow(QtWidgets.QMainWindow):
             x += 1
 
         self.sample_window.tableWidget.move(0,0)
+        self.sample_window.tableWidget.resizeColumnsToContents()
+        self.sample_window.tableWidget.resizeRowsToContents()
+
+    def clamp(self, x, minn, maxx):
+        return x if x > minn and x < maxx else (minn if x < minn else maxx)
 
     def count_nbr_sample(self, path):
         return len(os.listdir(path))
@@ -327,26 +348,88 @@ class MyWindow(QtWidgets.QMainWindow):
         sorted_files.sort(key=str.casefold)
         return sorted_files
 
+    def move_up(self):
+        if self.index_file < len(self.list_files):
+            self.list_files = self.get_sorted_files()
+            self.move_file_name(way=1)
+
+    def move_down(self):
+        if self.index_file > 0:
+            self.list_files = self.get_sorted_files()
+            self.move_file_name(way=-1)
+
+
+    def move_file_name(self, way):    
+            source_old_name = self.file_name
+            source_new_name = str(self.index_file + way) + self.file_name[1:]
+            dest_old_name = self.list_files[self.index_file + way]
+            dest_new_name = str(self.list_files.index(source_old_name)) + dest_old_name[1:]
+        
+            source_old_path = os.path.join(self.folder_path, source_old_name)
+            source_new_path = os.path.join(self.folder_path, source_new_name)
+
+            dest_old_path = os.path.join(self.folder_path, dest_old_name)
+            dest_new_path = os.path.join(self.folder_path, dest_new_name)
+        
+            if source_old_path != source_new_path:
+                os.rename(source_old_path, source_new_path)
+            if dest_old_path != dest_new_path:
+                os.rename(dest_old_path, dest_new_path)
+            self.ui.position_label.display(str(self.index_file+way))
+
+            self.fileModel.layoutChanged.emit()
+
+
+    def move_sample_order(self):
+        self.list_files = self.get_sorted_files()
+        self.ui.move_sample_spinbox.setMaximum(len(self.list_files)-1)
+        source_old_name = self.file_name
+        source_new_name = str(self.ui.move_sample_spinbox.value()) + self.file_name[1:]
+        dest_old_name = self.list_files[self.ui.move_sample_spinbox.value()]
+        dest_new_name = str(self.list_files.index(source_old_name)) + dest_old_name[1:]
+        
+        source_old_path = os.path.join(self.folder_path, source_old_name)
+        source_new_path = os.path.join(self.folder_path, source_new_name)
+
+        dest_old_path = os.path.join(self.folder_path, dest_old_name)
+        dest_new_path = os.path.join(self.folder_path, dest_new_name)
+        
+        if source_old_path != source_new_path:
+            os.rename(source_old_path, source_new_path)
+        if dest_old_path != dest_new_path:
+            os.rename(dest_old_path, dest_new_path)
+
+        self.fileModel.layoutChanged.emit()
+
     def rename_all(self):
         ''' rename all files from active destination'''
         listfile = self.get_sorted_files()
         self.rename_list_file(listfile)
+        self.list_files = self.get_sorted_files()
 
     def rename_list_file(self, list_of_file):
-        ''' Rename the file with index added if not present '''
-        start_with_number = False    
+        ''' Rename the file with index'''
+        # start_with_number = False    
         # test if begin with number_
-        for file in list_of_file:
-            if file[:1].isdigit() and file[1:2] == "_":
-                start_with_number = True
-            else:
-                start_with_number = False    
-        if not start_with_number:
+        # for file in list_of_file:
+        #     if file[:1].isdigit() and file[1:2] == "_":
+        #         start_with_number = True
+        #     else:
+        #         start_with_number = False    
+        if not all((f[:1].isdigit() and f[1:2] == "_") for f in list_of_file):
             # add index_ to each files
             for number, file in enumerate(list_of_file):
                 path_to_file = os.path.join(self.folder_path, file)
                 path_to_new_file = os.path.join(self.folder_path, str(number) + "_" + str(file))
                 os.rename(path_to_file, path_to_new_file)
+
+    def reindex(self):
+        listfile = self.get_sorted_files()
+        for number, file in enumerate(listfile):
+                    path_to_file = os.path.join(self.folder_path, file)
+                    new_name = str(number) + file[1:]
+                    path_to_new_file = os.path.join(self.folder_path, new_name)
+                    os.rename(path_to_file, path_to_new_file)
 
     def uname_all(self):
         ''' remove the index_ of all active destination files '''
@@ -375,14 +458,16 @@ class MyWindow(QtWidgets.QMainWindow):
     def copy_file(self):
         ''' copy the selected source file to active destination directory '''
         if os.path.isfile(self.library_file_path) and os.path.isdir(self.folder_path):
-            shutil.copy(self.library_file_path, self.folder_path)
+            newpath = os.path.join(self.folder_path, str(len(self.list_files)) + "_" + self.library_file_name)
+            shutil.copy(self.library_file_path, newpath)
         self.create_sample_window()    
 
     def delete_file(self):
         ''' delete the selected destination file '''
         if os.path.isfile(self.file_path):
             os.remove(self.file_path)
-        self.create_sample_window()
+            self.reindex()
+            self.create_sample_window()
 
     def move_to(self):
         verif = self.count_nbr_sample(self.folder_path)
@@ -460,7 +545,8 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def copy_to_bank(self):
         ''' copy the selected source file to active directory and rename according to bank number'''
-        init_listfile = self.get_sorted_files()    
+        init_listfile = self.get_sorted_files()
+        index_file = init_listfile.index(self.file_name)    
         self.unrename_list(init_listfile)
         if self.start_with_number:
             init_listfile = [file[2:] for file in init_listfile]
@@ -475,6 +561,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def move_to_bank(self):
         init_listfile = self.get_sorted_files()    
+        index_file = init_listfile.index(self.file_name)
         if self.file_name in init_listfile:
             self.unrename_list(init_listfile)
             if self.start_with_number:
@@ -482,14 +569,12 @@ class MyWindow(QtWidgets.QMainWindow):
                 self.file_name = self.file_name[2:]
             else:
                 init_listfile = [file for file in init_listfile]
-            init_listfile.remove(self.file_name)
-            init_listfile.insert(self.ui.bank.value(), self.file_name)
+            init_listfile[self.ui.bank.value()], init_listfile[index_file] = init_listfile[index_file], init_listfile[self.ui.bank.value()]
             self.rename_list_file(init_listfile)   
         self.create_sample_window()
 
     def listen_sample_bank(self):
-        ''' listen sample button '''
-        
+        ''' listen sample button '''   
         sender = self.sender()
         if sender.text().isalpha():
             if sender.text().islower(): 
@@ -530,6 +615,16 @@ class MyWindow(QtWidgets.QMainWindow):
         else:
             Popen(["xdg-open", self.init_path])            
                 
+    def create_dict(self):
+        for ch in self.alpha:
+            self.dict_description[ch.lower()] = ""
+            self.dict_description[ch.upper()] = ""
+        for ch in self.nonalpha:
+            self.dict_description[ch] = ""
+        with open(os.path.join(self.init_path, "description.cs"), "wb") as file:
+                pickle.dump(self.dict_description, file)        
+
+
 class Sample_Window(QtWidgets.QWidget):
  
     def __init__(self, row, parent=None):
