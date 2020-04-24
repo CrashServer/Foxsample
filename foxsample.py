@@ -138,8 +138,9 @@ class MyWindow(QtWidgets.QMainWindow):
 
         ### Buttons destination click
         #self.ui.move_to_bank_button.clicked.connect(self.move_to_bank)
-        self.ui.delete_button.clicked.connect(self.delete_file)
+        self.ui.reindex_button.clicked.connect(self.reindex)
         self.ui.rename_button.clicked.connect(self.rename_file)
+        self.ui.delete_button.clicked.connect(self.delete_file)
         self.ui.convert_button.clicked.connect(self.convert_to_wav)
         #self.ui.rename_all_button.clicked.connect(self.rename_all)
         #self.ui.unrename_button.clicked.connect(self.uname_all)
@@ -361,9 +362,9 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def move_file_name(self, way):    
             source_old_name = self.file_name
-            source_new_name = str(self.index_file + way) + self.file_name[1:]
+            source_new_name = f"{(self.index_file + way):02d}" + self.file_name[2:]
             dest_old_name = self.list_files[self.index_file + way]
-            dest_new_name = str(self.list_files.index(source_old_name)) + dest_old_name[1:]
+            dest_new_name = f"{self.list_files.index(source_old_name):02d}" + dest_old_name[2:]
         
             source_old_path = os.path.join(self.folder_path, source_old_name)
             source_new_path = os.path.join(self.folder_path, source_new_name)
@@ -416,20 +417,21 @@ class MyWindow(QtWidgets.QMainWindow):
         #         start_with_number = True
         #     else:
         #         start_with_number = False    
-        if not all((f[:1].isdigit() and f[1:2] == "_") for f in list_of_file):
+        if not all((f[:2].isdigit() and f[2:3] == "_") for f in list_of_file):
             # add index_ to each files
             for number, file in enumerate(list_of_file):
                 path_to_file = os.path.join(self.folder_path, file)
-                path_to_new_file = os.path.join(self.folder_path, str(number) + "_" + str(file))
+                path_to_new_file = os.path.join(self.folder_path, f"{number:02d}" + "_" + str(file))
                 os.rename(path_to_file, path_to_new_file)
 
     def reindex(self):
         listfile = self.get_sorted_files()
         for number, file in enumerate(listfile):
                     path_to_file = os.path.join(self.folder_path, file)
-                    new_name = str(number) + file[1:]
+                    new_name = f"{number:02d}" + file[2:]
                     path_to_new_file = os.path.join(self.folder_path, new_name)
                     os.rename(path_to_file, path_to_new_file)
+        self.list_files = self.get_sorted_files()
 
     def uname_all(self):
         ''' remove the index_ of all active destination files '''
@@ -440,7 +442,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.start_with_number = False
         # test if all begin with number         
         for file in list_of_file:
-            if file[:1].isdigit() and file[1:2] == "_":
+            if file[:2].isdigit() and file[2:3] == "_":
                 self.start_with_number = True
             else:
                 self.start_with_number = False    
@@ -448,32 +450,38 @@ class MyWindow(QtWidgets.QMainWindow):
             i=1
             for file in list_of_file:
                 path_to_file = os.path.join(self.folder_path, file)
-                path_to_new_file = os.path.join(self.folder_path, str(file[2:]))
+                path_to_new_file = os.path.join(self.folder_path, str(file[3:]))
                 if os.path.exists(path_to_new_file):
                     bef, sep, after = path_to_new_file.partition(".")
-                    path_to_new_file = bef + str(i) + sep + after
+                    path_to_new_file = bef + f"{i:02b}" + sep + after
                     i += 1
                 os.rename(path_to_file, path_to_new_file)        
 
     def copy_file(self):
         ''' copy the selected source file to active destination directory '''
+        self.list_files = self.get_sorted_files()
         if os.path.isfile(self.library_file_path) and os.path.isdir(self.folder_path):
-            newpath = os.path.join(self.folder_path, str(len(self.list_files)) + "_" + self.library_file_name)
+            newpath = os.path.join(self.folder_path, f"{len(self.list_files):02d}" + "_" + self.library_file_name)
             shutil.copy(self.library_file_path, newpath)
+        self.list_files = self.get_sorted_files()    
         self.create_sample_window()    
 
     def delete_file(self):
+        self.list_files = self.get_sorted_files()
         ''' delete the selected destination file '''
         if os.path.isfile(self.file_path):
             os.remove(self.file_path)
             self.reindex()
+            self.list_files = self.get_sorted_files()
             self.create_sample_window()
 
     def move_to(self):
+        self.list_files = self.get_sorted_files()
         verif = self.count_nbr_sample(self.folder_path)
         self.copy_file()
         if self.count_nbr_sample(self.folder_path) == verif + 1:
             os.remove(self.library_file_path)
+        self.list_files = self.get_sorted_files()    
         self.create_sample_window()
 
     def convert_to_wav(self):
@@ -503,8 +511,9 @@ class MyWindow(QtWidgets.QMainWindow):
         if ok:
             path_to_file = os.path.join(self.folder_path, self.file_name)
             path_to_new_file = os.path.join(self.folder_path, new_name)
-            os.rename(path_to_file, path_to_new_file)
-            
+            os.rename(path_to_file, path_to_new_file)    
+        self.list_files = self.get_sorted_files()
+
     def update_dict_description(self):
         description = self.ui.sample_description.text()
         sample = self.find_path_symbol()
@@ -565,8 +574,8 @@ class MyWindow(QtWidgets.QMainWindow):
         if self.file_name in init_listfile:
             self.unrename_list(init_listfile)
             if self.start_with_number:
-                init_listfile = [file[2:] for file in init_listfile]
-                self.file_name = self.file_name[2:]
+                init_listfile = [file[3:] for file in init_listfile]
+                self.file_name = self.file_name[3:]
             else:
                 init_listfile = [file for file in init_listfile]
             init_listfile[self.ui.bank.value()], init_listfile[index_file] = init_listfile[index_file], init_listfile[self.ui.bank.value()]
