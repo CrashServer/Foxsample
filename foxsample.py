@@ -136,6 +136,8 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.Up_Button.clicked.connect(self.move_down)
         self.ui.Down_Button.clicked.connect(self.move_up)
 
+        self.ui.swap_Button.clicked.connect(self.swap)
+
         ### Buttons destination click
         #self.ui.move_to_bank_button.clicked.connect(self.move_to_bank)
         self.ui.reindex_button.clicked.connect(self.reindex)
@@ -154,6 +156,8 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.moveto_button.clicked.connect(self.move_to)
         self.ui.openfoxdot_button.clicked.connect(self.open_foxdot)
         self.ui.open_dir_button.clicked.connect(self.open_dir_foxdot)
+        self.ui.open_source_dir_pushButton.clicked.connect(self.open_dir_src)
+        self.ui.swap_dir_name_Button.clicked.connect(self.swap_dir_name)
 
         self.ui.exit_button.clicked.connect(self.closeEvent)
         #self.ui.copy_to_bank_no_button.clicked.connect(self.copy_to_bank)
@@ -359,7 +363,6 @@ class MyWindow(QtWidgets.QMainWindow):
             self.list_files = self.get_sorted_files()
             self.move_file_name(way=-1)
 
-
     def move_file_name(self, way):    
             source_old_name = self.file_name
             source_new_name = f"{(self.index_file + way):02d}" + self.file_name[2:]
@@ -381,13 +384,13 @@ class MyWindow(QtWidgets.QMainWindow):
             self.fileModel.layoutChanged.emit()
 
 
-    def move_sample_order(self):
+    def swap(self):
         self.list_files = self.get_sorted_files()
-        self.ui.move_sample_spinbox.setMaximum(len(self.list_files)-1)
+        self.ui.swap_spinBox.setMaximum(len(self.list_files)-1)
         source_old_name = self.file_name
-        source_new_name = str(self.ui.move_sample_spinbox.value()) + self.file_name[1:]
-        dest_old_name = self.list_files[self.ui.move_sample_spinbox.value()]
-        dest_new_name = str(self.list_files.index(source_old_name)) + dest_old_name[1:]
+        source_new_name = f"{self.ui.swap_spinBox.value():02d}" + self.file_name[2:]
+        dest_old_name = self.list_files[self.ui.swap_spinBox.value()]
+        dest_new_name = f"{self.list_files.index(source_old_name):02d}" + dest_old_name[2:]
         
         source_old_path = os.path.join(self.folder_path, source_old_name)
         source_new_path = os.path.join(self.folder_path, source_new_name)
@@ -514,6 +517,21 @@ class MyWindow(QtWidgets.QMainWindow):
             os.rename(path_to_file, path_to_new_file)    
         self.list_files = self.get_sorted_files()
 
+    def swap_dir_name(self):
+        dest_old_path = self.folder_path
+        dest_new_path = str(self.folder_path + "_tmp")
+        
+        reply = QtWidgets.QMessageBox.question(self, "Switch Folder name", "Switch {} --> {}".format(self.library_path, self.folder_path), QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
+        if reply == QtWidgets.QMessageBox.Yes:
+            os.rename(dest_old_path, dest_new_path)
+            src_old_path = self.library_path
+            os.rename(src_old_path, dest_old_path)
+            os.rename(dest_new_path, src_old_path)
+            self.fileModel.layoutChanged.emit()
+            self.libraryModel.layoutChanged.emit()  
+        else:
+            pass
+        
     def update_dict_description(self):
         description = self.ui.sample_description.text()
         sample = self.find_path_symbol()
@@ -609,20 +627,28 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def open_foxdot(self):
         try:
-            call(["python3", "-m", "FoxDot", "-n", "-d", self.init_path])                     
+            Popen(["python3", "-m", "FoxDot", "-n", "-d", self.init_path])                     
         except:
             try:
-                call(["python3", "-m", "FoxDot", "-n", "-d", self.init_path])
+                Popen(["python", "-m", "FoxDot", "-n", "-d", self.init_path])
             except:
                 self.msg_box("Couldn't execute Foxdot", "Please install foxdot first", "Foxdot Error !")
 
     def open_dir_foxdot(self):
+        ''' Open selected FoxDot directory'''
+        self.open_dir(self.init_path)
+    
+    def open_dir_src(self):
+        ''' Open selected source directory'''
+        self.open_dir(self.library_path)
+
+    def open_dir(self, path):
         if platform.system() == "Windows":
-            os.startfile(self.init_path)
+            os.startfile(path)
         elif platform.system() == "Darwin":
-            Popen(["open", self.init_path])
+            Popen(["open", path])
         else:
-            Popen(["xdg-open", self.init_path])            
+            Popen(["xdg-open", path])            
                 
     def create_dict(self):
         for ch in self.alpha:
@@ -643,7 +669,7 @@ class Sample_Window(QtWidgets.QWidget):
         self.left = 0
         self.top = 0
         self.width = 300
-        self.height = 800
+        self.height = 1000
         self.initUI()
         
     def initUI(self):
