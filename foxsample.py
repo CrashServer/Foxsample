@@ -100,6 +100,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.browse_library_path_button.clicked.connect(self.browse_library_path)
 
         ### The Folder Sample TreeView
+        os.environ["QT_FILESYSTEMMODEL_WATCH_FILES"] = '1'
         self.dirModel = QtWidgets.QFileSystemModel()
         self.dirModel.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Dirs)
         self.dirModelLibrary = QtWidgets.QFileSystemModel()
@@ -521,7 +522,7 @@ class MyWindow(QtWidgets.QMainWindow):
         dest_old_path = self.folder_path
         dest_new_path = str(self.folder_path + "_tmp")
         
-        reply = QtWidgets.QMessageBox.question(self, "Switch Folder name", "Switch {} --> {}".format(self.library_path, self.folder_path), QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
+        reply = QtWidgets.QMessageBox.question(self, "Switch Folder name", "Switch {} --> {}\nEXPERIMENTAL: please, restart the program after".format(self.library_path, self.folder_path), QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
         if reply == QtWidgets.QMessageBox.Yes:
             os.rename(dest_old_path, dest_new_path)
             src_old_path = self.library_path
