@@ -4,7 +4,7 @@
 from PyQt5  import QtWidgets, QtCore, QtGui
 from PyQt5.QtMultimedia import QSoundEffect, QMediaPlayer
 
-from layout import Ui_MainWindow
+from layout720 import Ui_MainWindow
 #from pydub import AudioSegment
 #from pydub.playback import play
 #import simpleaudio as sa
@@ -160,7 +160,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.open_source_dir_pushButton.clicked.connect(self.open_dir_src)
         self.ui.swap_dir_name_Button.clicked.connect(self.swap_dir_name)
 
-        self.ui.exit_button.clicked.connect(self.closeEvent)
+        #self.ui.exit_button.clicked.connect(self.closeEvent)
         #self.ui.copy_to_bank_no_button.clicked.connect(self.copy_to_bank)
 
         # Samples button
@@ -228,6 +228,7 @@ class MyWindow(QtWidgets.QMainWindow):
     def on_clicked_folder(self, index):
         self.folder_path = self.dirModel.fileInfo(index).absoluteFilePath()
         self.ui.listView_sample.setRootIndex(self.fileModel.setRootPath(self.folder_path))
+        self.ui.statusbar.showMessage(self.folder_path)
         if self.find_path_symbol() in self.dict_description:
             self.ui.sample_description.setText(self.dict_description[self.find_path_symbol()])
         else:
@@ -236,6 +237,7 @@ class MyWindow(QtWidgets.QMainWindow):
     def on_clicked_file(self, index):
         self.rename_all()
         self.file_path = self.fileModel.fileInfo(index).absoluteFilePath()
+        self.ui.statusbar.showMessage(self.file_path)
         self.file_name = str(self.fileModel.fileInfo(index).fileName())
         self.list_files = self.get_sorted_files()
         self.index_file = self.list_files.index(self.file_name)
@@ -247,14 +249,15 @@ class MyWindow(QtWidgets.QMainWindow):
     def on_clicked_folder_library(self, index):
         self.library_path = self.dirModelLibrary.fileInfo(index).absoluteFilePath()
         self.ui.listView_library.setRootIndex(self.libraryModel.setRootPath(self.library_path))
+        self.ui.statusbar.showMessage(self.library_path)
 
     def on_clicked_file_library(self, index):
         self.library_file_path = self.libraryModel.fileInfo(index).absoluteFilePath()
         self.library_file_name = str(self.fileModel.fileInfo(index).fileName())
+        self.ui.statusbar.showMessage(self.library_file_path)
         self.sample_info(self.library_file_path)
         self.play_audio(self.library_file_path)
             
-
     def sample_info(self, path):
         ''' Show samples informations '''
         with wave.open(path, "rb") as file:      
@@ -669,8 +672,8 @@ class Sample_Window(QtWidgets.QWidget):
         self.title = 'Sample Dictionnary'
         self.left = 0
         self.top = 0
-        self.width = 300
-        self.height = 1000
+        self.width = 250
+        self.height = 720
         self.initUI()
         
     def initUI(self):
@@ -689,7 +692,7 @@ class Sample_Window(QtWidgets.QWidget):
         self.tableWidget.setRowCount(self.row)
         self.tableWidget.setColumnCount(2)
         self.tableWidget.setHorizontalHeaderItem(0, QtWidgets.QTableWidgetItem("Description"))
-        self.tableWidget.setHorizontalHeaderItem(1, QtWidgets.QTableWidgetItem("Nbr of samples"))
+        self.tableWidget.setHorizontalHeaderItem(1, QtWidgets.QTableWidgetItem("Nbr"))
 
 if __name__ == '__main__':
     import sys
