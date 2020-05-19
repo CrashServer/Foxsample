@@ -31,7 +31,8 @@ python3 foxsample.py
 
 1 - When you start the program for the first time, you must choose a foxdot snd directory. This is not necessarily the official directory, it can be any directory, but it must have the same structure (a/upper/, _/+/, ...).
 Next time you open the program, this location is saved.
-Tips : as it's still a beta vesion, it's better to work with a copy of the original directory
+
+WARNING : as it's still a beta vesion, it's better to work with a copy of the original directory
 
 2 - Navigate through the directory, choose one, and select a sample to listen to it. If not, all the files in the directory will be reindexed.
 
