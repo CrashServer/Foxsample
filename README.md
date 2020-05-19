@@ -12,7 +12,7 @@ Foxdot is a livecoding language. More info http://foxdot.org
 ```
 - Python 3
 - Pyqt5 
-- ffmpeg (optionnal for wav convert)
+- ffmpeg (optional for wav convert)
 ```
 
 ### Installing
