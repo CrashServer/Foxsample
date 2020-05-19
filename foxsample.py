@@ -193,18 +193,20 @@ class MyWindow(QtWidgets.QMainWindow):
     def browse_sample_path(self):
         ## Select the Foxdot sample directory
         self.folder_path = QtWidgets.QFileDialog.getExistingDirectory(self, "Open FoxDot Sample Folder (./FoxDot/snd/ by default) ", self.folder_path, QtWidgets.QFileDialog.ShowDirsOnly)
-        self.init_path = self.folder_path
-        self.store_sample_path()
-        self.ui.sample_path_label.setText(self.folder_path)
-        self.ui.sample_path_label.adjustSize()
+        if self.folder_path:
+            self.init_path = self.folder_path
+            self.store_sample_path()
+            self.ui.sample_path_label.setText(self.folder_path)
+            self.ui.sample_path_label.adjustSize()
 
     def browse_library_path(self):
         ## Select the custom sample directory
         self.library_path = QtWidgets.QFileDialog.getExistingDirectory(self, "Open Library Folder", self.library_path, QtWidgets.QFileDialog.ShowDirsOnly)
-        self.store_sample_path()
-        self.ui.library_path_label.setText(self.library_path)
-        self.ui.library_path_label.adjustSize()
-        self.load_library_structure()    
+        if self.library_path:
+            self.store_sample_path()
+            self.ui.library_path_label.setText(self.library_path)
+            self.ui.library_path_label.adjustSize()
+            self.load_library_structure()    
 
     def store_sample_path(self):
         # Store the selected sample path for next session
@@ -236,15 +238,17 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def on_clicked_file(self, index):
         self.rename_all()
-        self.file_path = self.fileModel.fileInfo(index).absoluteFilePath()
-        self.ui.statusbar.showMessage(self.file_path)
-        self.file_name = str(self.fileModel.fileInfo(index).fileName())
-        self.list_files = self.get_sorted_files()
-        self.index_file = self.list_files.index(self.file_name)
-        self.ui.position_label.display(str(self.index_file))
-        self.sample_info(self.file_path)
-        self.play_audio(self.file_path)
-        
+        try:
+            self.file_path = self.fileModel.fileInfo(index).absoluteFilePath()
+            self.ui.statusbar.showMessage(self.file_path)
+            self.file_name = str(self.fileModel.fileInfo(index).fileName())
+            self.list_files = self.get_sorted_files()
+            self.index_file = self.list_files.index(self.file_name)
+            self.ui.position_label.display(str(self.index_file))
+            self.sample_info(self.file_path)
+            self.play_audio(self.file_path)
+        except:
+            pass
 
     def on_clicked_folder_library(self, index):
         self.library_path = self.dirModelLibrary.fileInfo(index).absoluteFilePath()
@@ -274,19 +278,21 @@ class MyWindow(QtWidgets.QMainWindow):
                 self.sound = None
         except:
             pass        
-        if os.path.isfile(filepath):
+        try:
+            self.sound = QSoundEffect(self)
+            self.sound.setSource(QtCore.QUrl.fromLocalFile(filepath))
+            self.sound.setVolume(self.ui.volume_slider.value()/100)
+            if self.ui.loop_checkbox.isChecked():
+                self.sound.setLoopCount(QSoundEffect.Infinite)               
+            self.sound.play()
+        except:
             try:
-                self.sound = QSoundEffect(self)
-                self.sound.setSource(QtCore.QUrl.fromLocalFile(filepath))
-                self.sound.setVolume(self.ui.volume_slider.value()/100)
-                if self.ui.loop_checkbox.isChecked():
-                    self.sound.setLoopCount(QSoundEffect.Infinite)               
-                self.sound.play()
-            except:
                 self.sound = QMediaPlayer(self)
                 self.sound.setSource(QtCore.QUrl.fromLocalFile(filepath))
                 self.sound.setVolume(self.ui.volume_slider.value()/100)
                 self.sound.play()
+            except:
+                pass
 
     def create_sample_window(self):
         self.count_dict = {}
@@ -299,6 +305,7 @@ class MyWindow(QtWidgets.QMainWindow):
             nbr = self.count_nbr_sample(path)
             self.sample_window.tableWidget.setItem(x, 1, QtWidgets.QTableWidgetItem(str(nbr)))
             self.sample_window.tableWidget.item(x, 1).setBackground(QtGui.QColor(self.clamp((10+int(nbr)*20),0,255),0,25))
+            self.sample_window.tableWidget.item(x, 1).setForeground(QtGui.QColor(255,255,255))
 
             if char.lower() in keys_available:
                 self.sample_window.tableWidget.setItem(x,0, QtWidgets.QTableWidgetItem(self.dict_description[char.lower()]))
@@ -313,7 +320,8 @@ class MyWindow(QtWidgets.QMainWindow):
             nbr = self.count_nbr_sample(path)
             self.sample_window.tableWidget.setItem(x, 1, QtWidgets.QTableWidgetItem(str(nbr)))
             self.sample_window.tableWidget.item(x, 1).setBackground(QtGui.QColor(self.clamp((10+int(nbr)*20),0,255),0,25))
-            
+            self.sample_window.tableWidget.item(x, 1).setForeground(QtGui.QColor(255,255,255))
+
             if char.upper() in keys_available:
                 self.sample_window.tableWidget.setItem(x,0, QtWidgets.QTableWidgetItem(self.dict_description[char.upper()]))
             else:
@@ -327,7 +335,7 @@ class MyWindow(QtWidgets.QMainWindow):
             nbr = self.count_nbr_sample(path)
             self.sample_window.tableWidget.setItem(x, 1, QtWidgets.QTableWidgetItem(str(nbr)))
             self.sample_window.tableWidget.item(x, 1).setBackground(QtGui.QColor(self.clamp((10+int(nbr)*20),0,255),0,25))
-            
+            self.sample_window.tableWidget.item(x, 1).setForeground(QtGui.QColor(255,255,255))
             if char in keys_available:
                 self.sample_window.tableWidget.setItem(x,0, QtWidgets.QTableWidgetItem(self.dict_description[char]))
             else:
@@ -413,17 +421,12 @@ class MyWindow(QtWidgets.QMainWindow):
         ''' rename all files from active destination'''
         listfile = self.get_sorted_files()
         self.rename_list_file(listfile)
+        self.fileModel.layoutChanged.emit()
         self.list_files = self.get_sorted_files()
+
 
     def rename_list_file(self, list_of_file):
         ''' Rename the file with index'''
-        # start_with_number = False    
-        # test if begin with number_
-        # for file in list_of_file:
-        #     if file[:1].isdigit() and file[1:2] == "_":
-        #         start_with_number = True
-        #     else:
-        #         start_with_number = False    
         if not all((f[:2].isdigit() and f[2:3] == "_") for f in list_of_file):
             # add index_ to each files
             for number, file in enumerate(list_of_file):
