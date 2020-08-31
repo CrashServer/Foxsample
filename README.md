@@ -11,7 +11,8 @@ Foxdot is a livecoding language. More info http://foxdot.org
 ### Prerequisites
 ```
 - Python 3
-- Pyqt5 
+- Pyqt5
+- Pyqt5 multimedia (Ubuntu : sudo apt install python3-pyqt5.qtmultimedia) 
 - ffmpeg (optional for wav conversion)
 ```
 
