@@ -1,10 +1,11 @@
 #coding: utf8
 #!/usr/bin/env python3
 
-from PyQt5  import QtWidgets, QtCore, QtGui
-from PyQt5.QtMultimedia import QSoundEffect, QMediaPlayer
+from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtMultimedia import QSoundEffect, QMediaPlayer, QMediaContent
+from PyQt5.QtCore import QTimer
 
-from layout720 import Ui_MainWindow
+from layout import Ui_MainWindow
 #from pydub import AudioSegment
 #from pydub.playback import play
 #import simpleaudio as sa
@@ -31,6 +32,8 @@ class MyWindow(QtWidgets.QMainWindow):
         self.dict_description = {}
         self.file_path = ""
         self.library_file_path = ""
+        self.player = QMediaPlayer()
+        self.player.mediaStatusChanged.connect(self.on_media_status_changed)
 
         self.alpha = "abcdefghijklmnopqrstuvwxyz"
         self.nonalpha = {"&" : "ampersand",
@@ -56,7 +59,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
         ### load the saved directories
         with open("file_path.cs", "rb") as file:
-	        self.dict_file = pickle.load(file)
+            self.dict_file = pickle.load(file)
 
         parser = argparse.ArgumentParser(
             prog="FoxDot Sample Manager", 
@@ -212,7 +215,7 @@ class MyWindow(QtWidgets.QMainWindow):
         # Store the selected sample path for next session
         self.dict_file = {"destination": self.init_path, "source": self.library_path}
         with open("file_path.cs", "wb") as file:
-	        pickle.dump(self.dict_file, file)    
+            pickle.dump(self.dict_file, file)    
     
 
     def load_folder_structure(self):
@@ -264,35 +267,48 @@ class MyWindow(QtWidgets.QMainWindow):
             
     def sample_info(self, path):
         ''' Show samples informations '''
-        with wave.open(path, "rb") as file:      
-            self.ui.label_channel.setText("Audio channel : " + str(file.getnchannels())) 
-            self.ui.label_bytepersample.setText("Sample width : " + str(file.getsampwidth())) 
-            self.ui.label_samplerate.setText("Frame rate : " + str(file.getframerate())) 
-            self.ui.label_duration.setText("Duration : " + str(round(file.getnframes()/float(file.getframerate()), 5)))
+        try:
+            with wave.open(path, "rb") as file:      
+                self.ui.label_channel.setText("Audio channel : " + str(file.getnchannels())) 
+                self.ui.label_bytepersample.setText("Sample width : " + str(file.getsampwidth())) 
+                self.ui.label_samplerate.setText("Frame rate : " + str(file.getframerate())) 
+                self.ui.label_duration.setText("Duration : " + str(round(file.getnframes()/float(file.getframerate()), 5)))
+        except wave.Error:
+            self.ui.label_channel.clear()
+            self.ui.label_bytepersample.clear()
+            self.ui.label_samplerate.clear()
+            self.ui.label_duration.clear()
 
     def play_audio(self, filepath):
         try:
-            if self.sound.isPlaying():
-                self.sound.setLoopCount(0)
-                self.sound.stop()
-                self.sound = None
+            if self.player.isPlaying():
+                # self.player.setLoopCount(0)
+                self.player.stop()
+                self.player = None
         except:
             pass        
         try:
-            self.sound = QSoundEffect(self)
-            self.sound.setSource(QtCore.QUrl.fromLocalFile(filepath))
-            self.sound.setVolume(self.ui.volume_slider.value()/100)
-            if self.ui.loop_checkbox.isChecked():
-                self.sound.setLoopCount(QSoundEffect.Infinite)               
-            self.sound.play()
-        except:
-            try:
-                self.sound = QMediaPlayer(self)
-                self.sound.setSource(QtCore.QUrl.fromLocalFile(filepath))
-                self.sound.setVolume(self.ui.volume_slider.value()/100)
-                self.sound.play()
-            except:
-                pass
+            url = QtCore.QUrl.fromLocalFile(filepath)
+            content = QMediaContent(url)
+            self.player.setMedia(content)
+            # self.sound = QSoundEffect(self)
+            # self.sound.setSource(QtCore.QUrl.fromLocalFile(filepath))
+            self.player.setVolume(self.ui.volume_slider.value())
+            # if self.ui.loop_checkbox.isChecked():
+            #     self.player.setLoopCount(QSoundEffect.Infinite)               
+            self.player.play()
+        except Exception as e:
+            print(e)
+            # try:
+            #     self.sound = QMediaPlayer(self)
+            #     self.sound.setSource(QtCore.QUrl.fromLocalFile(filepath))
+            #     self.sound.setVolume(self.ui.volume_slider.value()/100)
+            #     self.sound.play()
+            # except:
+            #     pass
+    def on_media_status_changed(self, status):
+        if status == QMediaPlayer.EndOfMedia and self.ui.loop_checkbox.isChecked():
+            QTimer.singleShot(0, self.player.play)
 
     def create_sample_window(self):
         self.count_dict = {}
