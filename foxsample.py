@@ -159,6 +159,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.copy_button.clicked.connect(self.copy_file)
         self.ui.moveto_button.clicked.connect(self.move_to)
         self.ui.openfoxdot_button.clicked.connect(self.open_foxdot)
+        self.ui.make_dir_button.clicked.connect(self.make_directory)
         self.ui.open_dir_button.clicked.connect(self.open_dir_foxdot)
         self.ui.open_source_dir_pushButton.clicked.connect(self.open_dir_src)
         self.ui.swap_dir_name_Button.clicked.connect(self.swap_dir_name)
@@ -201,6 +202,7 @@ class MyWindow(QtWidgets.QMainWindow):
             self.store_sample_path()
             self.ui.sample_path_label.setText(self.folder_path)
             self.ui.sample_path_label.adjustSize()
+            self.load_folder_structure()  # Mettre à jour la tree view
 
     def browse_library_path(self):
         ## Select the custom sample directory
@@ -671,8 +673,57 @@ class MyWindow(QtWidgets.QMainWindow):
         elif platform.system() == "Darwin":
             Popen(["open", path])
         else:
-            Popen(["xdg-open", path])            
+            Popen(["xdg-open", path])
+
+    def make_directory(self):
+        """Créer un nouveau répertoire dans le folder_path"""
+        if not self.folder_path or not os.path.isdir(self.folder_path):
+            self.msg_box("Erreur", "Aucun répertoire valide sélectionné", "Erreur de répertoire")
+            return
+            
+        # Demander le nom du nouveau répertoire
+        dir_name, ok = QtWidgets.QInputDialog.getText(
+            self, 
+            'Créer un répertoire', 
+            'Nom du nouveau répertoire:', 
+            QtWidgets.QLineEdit.Normal, 
+            ''
+        )
+        
+        if ok and dir_name.strip():
+            # Nettoyer le nom du répertoire (supprimer les caractères non autorisés)
+            import re
+            dir_name = re.sub(r'[<>:"/\\|?*]', '_', dir_name.strip())
+            
+            if not dir_name:
+                self.msg_box("Erreur", "Nom de répertoire invalide", "Nom invalide")
+                return
                 
+            new_dir_path = os.path.join(self.folder_path, dir_name)
+            
+            try:
+                # Vérifier si le répertoire existe déjà
+                if os.path.exists(new_dir_path):
+                    self.msg_box("Erreur", f"Le répertoire '{dir_name}' existe déjà", "Répertoire existant")
+                    return
+                
+                # Créer le répertoire
+                os.makedirs(new_dir_path)
+                
+                # Rafraîchir la vue des répertoires
+                self.dirModel.layoutChanged.emit()
+                
+                # Message de confirmation
+                self.ui.statusbar.showMessage(f"Répertoire '{dir_name}' créé avec succès dans {self.folder_path}")
+                
+            except PermissionError:
+                self.msg_box("Erreur de permission", "Impossible de créer le répertoire. Vérifiez vos permissions.", "Erreur de permission")
+            except OSError as e:
+                self.msg_box("Erreur système", f"Impossible de créer le répertoire: {str(e)}", "Erreur OS")
+        elif ok:
+            # L'utilisateur a cliqué OK mais n'a pas saisi de nom
+            self.msg_box("Erreur", "Veuillez saisir un nom de répertoire", "Nom requis")
+            
     def create_dict(self):
         for ch in self.alpha:
             self.dict_description[ch.lower()] = ""
