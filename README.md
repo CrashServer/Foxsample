@@ -1,7 +1,7 @@
 # Zuper FoxDot Samples Manager- Turbo Edition v0.001
 A simple FoxDot samples manager
 
-A Python / Pyqt5 program to manage FoxDot sample directory.
+A Python / PyQt6 program to manage FoxDot sample directory.
 You can copy from external sources, listen to samples, auto rename, add descriptions and more.
 
 Foxdot is a livecoding language. More info http://foxdot.org
@@ -11,8 +11,8 @@ Foxdot is a livecoding language. More info http://foxdot.org
 ### Prerequisites
 ```
 - Python 3
-- Pyqt5
-- Pyqt5 multimedia (Ubuntu : sudo apt install python3-pyqt5.qtmultimedia) 
+- Pyqt6
+- Pyqt6 multimedia (Ubuntu : sudo apt install python3-pyqt6.qtmultimedia) 
 - ffmpeg (optional for wav conversion)
 ```
 

@@ -1,9 +1,9 @@
 #coding: utf8
 #!/usr/bin/env python3
 
-from PyQt5 import QtWidgets, QtCore, QtGui
-from PyQt5.QtMultimedia import QSoundEffect, QMediaPlayer, QMediaContent
-from PyQt5.QtCore import QTimer
+from PyQt6 import QtWidgets, QtCore, QtGui
+from PyQt6.QtMultimedia import QSoundEffect, QMediaPlayer, QAudioOutput
+from PyQt6.QtCore import QTimer
 
 from layout import Ui_MainWindow
 #from pydub import AudioSegment
@@ -33,6 +33,8 @@ class MyWindow(QtWidgets.QMainWindow):
         self.file_path = ""
         self.library_file_path = ""
         self.player = QMediaPlayer()
+        self.audio_output = QAudioOutput()
+        self.player.setAudioOutput(self.audio_output)
         self.player.mediaStatusChanged.connect(self.on_media_status_changed)
 
         self.alpha = "abcdefghijklmnopqrstuvwxyz"
@@ -104,10 +106,10 @@ class MyWindow(QtWidgets.QMainWindow):
 
         ### The Folder Sample TreeView
         os.environ["QT_FILESYSTEMMODEL_WATCH_FILES"] = '1'
-        self.dirModel = QtWidgets.QFileSystemModel()
-        self.dirModel.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Dirs)
-        self.dirModelLibrary = QtWidgets.QFileSystemModel()
-        self.dirModelLibrary.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.AllDirs)
+        self.dirModel = QtGui.QFileSystemModel()
+        self.dirModel.setFilter(QtCore.QDir.Filter.NoDotAndDotDot | QtCore.QDir.Filter.Dirs)
+        self.dirModelLibrary = QtGui.QFileSystemModel()
+        self.dirModelLibrary.setFilter(QtCore.QDir.Filter.NoDotAndDotDot | QtCore.QDir.Filter.AllDirs)
         
         self.ui.tree_sample_dir.setModel(self.dirModel)
         for i in range(1,4):
@@ -119,12 +121,12 @@ class MyWindow(QtWidgets.QMainWindow):
             
         ### The file sample View
         self.file_filters = ["*.wav", "*.aif", "*.ogg", "*.mp3"]
-        self.fileModel = QtWidgets.QFileSystemModel()
+        self.fileModel = QtGui.QFileSystemModel()
         self.fileModel.setNameFilters(self.file_filters)
-        self.fileModel.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Files)
-        self.libraryModel = QtWidgets.QFileSystemModel()
+        self.fileModel.setFilter(QtCore.QDir.Filter.NoDotAndDotDot | QtCore.QDir.Filter.Files)
+        self.libraryModel = QtGui.QFileSystemModel()
         self.libraryModel.setNameFilters(self.file_filters)
-        self.libraryModel.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Files)
+        self.libraryModel.setFilter(QtCore.QDir.Filter.NoDotAndDotDot | QtCore.QDir.Filter.Files)
         self.ui.listView_sample.setModel(self.fileModel)
         self.ui.listView_library.setModel(self.libraryModel)
         
@@ -184,8 +186,8 @@ class MyWindow(QtWidgets.QMainWindow):
         self.show_sample_window()
 
     def closeEvent(self, event):
-        reply = QtWidgets.QMessageBox.question(self, "Quit application", "Are you sure you wan't to quit ?", QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
-        if reply == QtWidgets.QMessageBox.Yes:
+        reply = QtWidgets.QMessageBox.question(self, "Quit application", "Are you sure you wan't to quit ?", QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No, QtWidgets.QMessageBox.StandardButton.Yes)
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
             #self.store_sample_path()
             self.sample_window.close()
             self.close()
@@ -196,7 +198,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def browse_sample_path(self):
         ## Select the Foxdot sample directory
-        self.folder_path = QtWidgets.QFileDialog.getExistingDirectory(self, "Open FoxDot Sample Folder (./FoxDot/snd/ by default) ", self.folder_path, QtWidgets.QFileDialog.ShowDirsOnly)
+        self.folder_path = QtWidgets.QFileDialog.getExistingDirectory(self, "Open FoxDot Sample Folder (./FoxDot/snd/ by default) ", self.folder_path, QtWidgets.QFileDialog.Option.ShowDirsOnly)
         if self.folder_path:
             self.init_path = self.folder_path
             self.store_sample_path()
@@ -206,7 +208,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def browse_library_path(self):
         ## Select the custom sample directory
-        self.library_path = QtWidgets.QFileDialog.getExistingDirectory(self, "Open Library Folder", self.library_path, QtWidgets.QFileDialog.ShowDirsOnly)
+        self.library_path = QtWidgets.QFileDialog.getExistingDirectory(self, "Open Library Folder", self.library_path, QtWidgets.QFileDialog.Option.ShowDirsOnly)
         if self.library_path:
             self.store_sample_path()
             self.ui.library_path_label.setText(self.library_path)
@@ -283,33 +285,21 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def play_audio(self, filepath):
         try:
-            if self.player.isPlaying():
-                # self.player.setLoopCount(0)
+            if self.player.playbackState() == QMediaPlayer.PlaybackState.PlayingState:
                 self.player.stop()
-                self.player = None
         except:
-            pass        
+            pass
         try:
             url = QtCore.QUrl.fromLocalFile(filepath)
-            content = QMediaContent(url)
-            self.player.setMedia(content)
-            # self.sound = QSoundEffect(self)
-            # self.sound.setSource(QtCore.QUrl.fromLocalFile(filepath))
-            self.player.setVolume(self.ui.volume_slider.value())
-            # if self.ui.loop_checkbox.isChecked():
-            #     self.player.setLoopCount(QSoundEffect.Infinite)               
+            self.player.setSource(url)
+            # Qt6: volume now lives on QAudioOutput and is a float in [0.0, 1.0]
+            self.audio_output.setVolume(self.ui.volume_slider.value() / 100)
             self.player.play()
         except Exception as e:
             print(e)
-            # try:
-            #     self.sound = QMediaPlayer(self)
-            #     self.sound.setSource(QtCore.QUrl.fromLocalFile(filepath))
-            #     self.sound.setVolume(self.ui.volume_slider.value()/100)
-            #     self.sound.play()
-            # except:
-            #     pass
+
     def on_media_status_changed(self, status):
-        if status == QMediaPlayer.EndOfMedia and self.ui.loop_checkbox.isChecked():
+        if status == QMediaPlayer.MediaStatus.EndOfMedia and self.ui.loop_checkbox.isChecked():
             QTimer.singleShot(0, self.player.play)
 
     def create_sample_window(self):
@@ -528,14 +518,14 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def msg_box(self, text, info, title):
         msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Critical)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
         msg.setText(text)
         msg.setInformativeText(info)
         msg.setWindowTitle(title)
-        msg.exec_()
+        msg.exec()
 
     def rename_file(self, index):
-        new_name, ok = QtWidgets.QInputDialog.getText(self, 'Rename the file', 'Rename the file:', QtWidgets.QLineEdit.Normal, self.file_name)
+        new_name, ok = QtWidgets.QInputDialog.getText(self, 'Rename the file', 'Rename the file:', QtWidgets.QLineEdit.EchoMode.Normal, self.file_name)
         if ok:
             path_to_file = os.path.join(self.folder_path, self.file_name)
             path_to_new_file = os.path.join(self.folder_path, new_name)
@@ -546,8 +536,8 @@ class MyWindow(QtWidgets.QMainWindow):
         dest_old_path = self.folder_path
         dest_new_path = str(self.folder_path + "_tmp")
         
-        reply = QtWidgets.QMessageBox.question(self, "Switch Folder name", "Switch {} --> {}\nEXPERIMENTAL: please, restart the program after".format(self.library_path, self.folder_path), QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
-        if reply == QtWidgets.QMessageBox.Yes:
+        reply = QtWidgets.QMessageBox.question(self, "Switch Folder name", "Switch {} --> {}\nEXPERIMENTAL: please, restart the program after".format(self.library_path, self.folder_path), QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No, QtWidgets.QMessageBox.StandardButton.Yes)
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
             os.rename(dest_old_path, dest_new_path)
             src_old_path = self.library_path
             os.rename(src_old_path, dest_old_path)
@@ -686,7 +676,7 @@ class MyWindow(QtWidgets.QMainWindow):
             self, 
             'Créer un répertoire', 
             'Nom du nouveau répertoire:', 
-            QtWidgets.QLineEdit.Normal, 
+            QtWidgets.QLineEdit.EchoMode.Normal, 
             ''
         )
         
@@ -769,7 +759,7 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     window = MyWindow()
     window.show()
-    ret = app.exec_()
+    ret = app.exec()
     
     app.quit()   
     sys.exit(ret)
